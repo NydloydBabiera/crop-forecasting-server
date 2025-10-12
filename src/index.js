@@ -1,38 +1,45 @@
-const express = require("express")
-const cors = require("cors")
-const mqtt = require("mqtt")
-require("dotenv").config()
+// import express from "express";
+// import http from "http";
+// import { Server } from "socket.io";
+// import cors from "cors";
+const express = require("express");
+const cors = require("cors");
+const { Server } = require("socket.io");
+const http = require("http");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let sensorData = { soil: 0, humidity: 0 };
-console.log(process.env.MQTT_BROKER)
-// Connect to MQTT Broker
-const client = mqtt.connect(`${process.env.MQTT_BROKER}`);
-
-client.on("connect", () => {
-  console.log("Connected to MQTT broker");
-  client.subscribe("esp32/sensor", (err) => {
-    if (!err) console.log("Subscribed to esp32/sensor");
-  });
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" },
 });
 
-client.on("message", (topic, message) => {
-  if (topic === "esp32/sensor") {
-    try {
-      sensorData = JSON.parse(message.toString());
-      console.log("Received:", sensorData);
-    } catch (e) {
-      console.error("Invalid JSON:", e);
-    }
-  }
+let sensorData = { humidity: 0, temperature: 0 };
+
+// REST endpoint (for ESP32)
+app.post("/api/sensor", (req, res) => {
+  const { temperature, humidity } = req.body;
+  sensorData = { temperature, humidity };
+  console.log("Received:", sensorData);
+
+  // Broadcast to all connected clients
+  io.emit("sensor-update", sensorData);
+
+  res.json({ status: "ok" });
 });
 
-// React client fetches this data
+// Optional: allow client to fetch current data manually
 app.get("/api/sensor", (req, res) => {
   res.json(sensorData);
 });
 
-app.listen(5000, () => console.log("Server running on port 5000"));
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+  // Send current data on connection
+  socket.emit("sensor-update", sensorData);
+  socket.on("disconnect", () => console.log("Client disconnected:", socket.id));
+});
+
+server.listen(5000, () => console.log("Server running on port 5000"));
