@@ -16,12 +16,12 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-let sensorData = { humidity: 0, temperature: 0 };
+let sensorData = { humidity: 0, temperature: 0, soil_moisture: 0 };
 
 // REST endpoint (for ESP32)
 app.post("/api/sensor", (req, res) => {
-  const { temperature, humidity } = req.body;
-  sensorData = { temperature, humidity };
+  const { temperature, humidity, soil_moisture } = req.body;
+  sensorData = { temperature, humidity, soil_moisture };
   console.log("Received:", sensorData);
 
   // Broadcast to all connected clients
