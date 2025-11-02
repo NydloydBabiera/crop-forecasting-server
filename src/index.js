@@ -6,6 +6,7 @@ const express = require("express");
 const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
+const { cropForecast } = require("./crop-forecast");
 
 const app = express();
 app.use(cors());
@@ -16,13 +17,15 @@ const io = new Server(server, {
   cors: { origin: "*" },
 });
 
-let sensorData = { humidity: 0, temperature: 0, soil_moisture: 0 };
+let sensorData = { humidity: 0, temperature: 0, soil_moisture: 0, npk: 0 };
 
 // REST endpoint (for ESP32)
 app.post("/api/sensor", (req, res) => {
-  const { temperature, humidity, soil_moisture } = req.body;
-  sensorData = { temperature, humidity, soil_moisture };
+  const { temperature, humidity, soil_moisture, npk } = req.body;
+  sensorData = { temperature, humidity, soil_moisture, npk };
   console.log("Received:", sensorData);
+  console.log("Forecasting crop...", cropForecast(sensorData));
+  sensorData.cropPrediction = cropForecast(sensorData);
 
   // Broadcast to all connected clients
   io.emit("sensor-update", sensorData);
