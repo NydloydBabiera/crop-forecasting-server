@@ -1,3 +1,4 @@
+const { format } = require("date-fns-tz");
 const pool = require("./db");
 
 async function recordCrop(cropData) {
@@ -29,10 +30,12 @@ async function getAllCropForecast() {
 
 async function getExistingCropConditions(cropName) {
   const now = new Date();
+  const formattedDate = format(now, "yyyy-MM-dd ", { timeZone: "Asia/Manila" });
+  console.log("Formatted Date:", formattedDate);
   const query = `
     SELECT * FROM crop_forecasting_data WHERE crop_name = $1 and created_at::date = $2::date;
   `;
-  const values = [cropName, now];
+  const values = [cropName, formattedDate];
   const result = await pool.query(query, values);
   return result?.rows.length > 0;
 }
