@@ -1,0 +1,40 @@
+const pool = require("./db");
+
+async function recordCrop(cropData) {
+  const { crop_name, temperature, humidity, soil_moisture, npk } = cropData;
+
+  const isCropExists = await getExistingCropConditions(crop_name);
+  const now = new Date().toISOString();
+
+  if (isCropExists) {
+    return;
+  }
+  const query = `
+    INSERT INTO crop_forecasting_data 
+    (crop_name, temperature, humidity, soil_moisture, npk)
+    VALUES ($1,$2,$3,$4,$5)
+    RETURNING *;
+  `;
+  const values = [crop_name, temperature, humidity, soil_moisture, npk];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+}
+
+async function getAllCropForecast() {
+  const result = await pool.query(
+    "SELECT * FROM crop_forecasting_data ORDER BY created_at ASC;"
+  );
+  return result.rows;
+}
+
+async function getExistingCropConditions(cropName) {
+  const now = new Date().toISOString();
+  const query = `
+    SELECT * FROM crop_forecasting_data WHERE crop_name = $1 and created_at::date = $2::date;
+  `;
+  const values = [cropName, now];
+  const result = await pool.query(query, values);
+  return result?.rows.length > 0;
+}
+
+module.exports = { recordCrop, getAllCropForecast };

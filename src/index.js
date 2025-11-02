@@ -7,6 +7,7 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
 const { cropForecast } = require("./crop-forecast");
+const { recordCrop, getAllCropForecast } = require("./data-access");
 
 const app = express();
 app.use(cors());
@@ -20,15 +21,16 @@ const io = new Server(server, {
 let sensorData = { humidity: 0, temperature: 0, soil_moisture: 0, npk: 0 };
 
 // REST endpoint (for ESP32)
-app.post("/api/sensor", (req, res) => {
+app.post("/api/sensor", async (req, res) => {
   const { temperature, humidity, soil_moisture, npk } = req.body;
   sensorData = { temperature, humidity, soil_moisture, npk };
-  console.log("Received:", sensorData);
-  console.log("Forecasting crop...", cropForecast(sensorData));
   sensorData.cropPrediction = cropForecast(sensorData);
 
   // Broadcast to all connected clients
   io.emit("sensor-update", sensorData);
+  sensorData.crop_name = sensorData.cropPrediction.crop;
+  // record crop data in the database
+  await recordCrop(sensorData);
 
   res.json({ status: "ok" });
 });
@@ -36,6 +38,15 @@ app.post("/api/sensor", (req, res) => {
 // Optional: allow client to fetch current data manually
 app.get("/api/sensor", (req, res) => {
   res.json(sensorData);
+});
+
+app.get("/getAllCropForecast", async (req, res) => {
+  try {
+    const crops = await getAllCropForecast();
+    res.json(crops);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 io.on("connection", (socket) => {
