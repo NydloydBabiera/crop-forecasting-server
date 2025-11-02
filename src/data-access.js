@@ -28,7 +28,7 @@ async function getAllCropForecast() {
 }
 
 async function getExistingCropConditions(cropName) {
-  const now = new Date().toISOString();
+  const now = new Date();
   const query = `
     SELECT * FROM crop_forecasting_data WHERE crop_name = $1 and created_at::date = $2::date;
   `;
