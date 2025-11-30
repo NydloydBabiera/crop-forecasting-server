@@ -30,7 +30,7 @@ async function getAllCropForecast() {
 
 async function getExistingCropConditions(cropName) {
   const now = new Date();
-  const formattedDate = formatInTimeZone(now, 'Asia/Manila', 'yyyy-MM-dd');
+  const formattedDate = formatInTimeZone(now, "Asia/Manila", "yyyy-MM-dd");
   console.log("Formatted Date:", formattedDate);
   const query = `
     SELECT * FROM crop_forecasting_data WHERE crop_name = $1 and created_at::date = $2::date;
@@ -40,4 +40,29 @@ async function getExistingCropConditions(cropName) {
   return result?.rows.length > 0;
 }
 
-module.exports = { recordCrop, getAllCropForecast };
+async function recordSensorReadings(sensorData) {
+  const { temperature, humidity, soil_moisture, npk } = sensorData;
+  const query = `
+    INSERT INTO sensor_readings 
+    (temperature, humidity, soil_moisture, npk)
+    VALUES ($1,$2,$3,$4)
+    RETURNING *;
+  `;
+  const values = [temperature, humidity, soil_moisture, npk];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+}
+
+async function getSensorReadings() {
+  const result = await pool.query(
+    "SELECT * FROM sensor_readings ORDER BY created_at DESC;"
+  );
+  return result.rows;
+}
+
+module.exports = {
+  recordCrop,
+  getAllCropForecast,
+  recordSensorReadings,
+  getSensorReadings,
+};

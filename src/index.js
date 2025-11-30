@@ -7,7 +7,7 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
 const { cropForecast } = require("./crop-forecast");
-const { recordCrop, getAllCropForecast } = require("./data-access");
+const { recordCrop, getAllCropForecast, recordSensorReadings, getSensorReadings } = require("./data-access");
 
 const app = express();
 app.use(cors());
@@ -31,6 +31,8 @@ app.post("/api/sensor", async (req, res) => {
   sensorData.crop_name = sensorData.cropPrediction.crop;
   // record crop data in the database
   await recordCrop(sensorData);
+  
+  await recordSensorReadings(sensorData);
 
   res.json({ status: "ok" });
 });
@@ -43,6 +45,15 @@ app.get("/api/sensor", (req, res) => {
 app.get("/getAllCropForecast", async (req, res) => {
   try {
     const crops = await getAllCropForecast();
+    res.json(crops);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/getSensorReadings", async (req, res) => {
+  try {
+    const crops = await getSensorReadings();
     res.json(crops);
   } catch (err) {
     res.status(500).json({ error: err.message });
