@@ -26,6 +26,7 @@ app.post("/api/sensor", async (req, res) => {
   sensorData = { temperature, humidity, soil_moisture, npk };
   sensorData.cropPrediction = cropForecast(sensorData);
 
+  console.log("Received sensor data:", sensorData);
   // Broadcast to all connected clients
   io.emit("sensor-update", sensorData);
   sensorData.crop_name = sensorData.cropPrediction.crop;

@@ -83,7 +83,8 @@ function cropForecast(sensorData) {
   const { temperature, humidity, soil_moisture, npk } = sensorData;
 
   let bestMatch = null;
-  let highestScore = 0;
+  let highestScore = 50;
+  let cropPredictions = [];
 
   crops.forEach((crop) => {
     let score = 0;
@@ -95,11 +96,12 @@ function cropForecast(sensorData) {
     if (score > highestScore) {
       highestScore = score;
       bestMatch = crop.name;
+      cropPredictions.push(crop.name);
     }
   });
 
   return bestMatch
-    ? { crop: bestMatch, matchPercent: highestScore }
+    ? { crop: bestMatch, crops:cropPredictions, matchPercent: highestScore }
     : { crop: "No suitable crop found", matchPercent: 0 };
 }
 
