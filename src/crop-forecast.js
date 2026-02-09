@@ -83,7 +83,7 @@ function cropForecast(sensorData) {
   const { temperature, humidity, soil_moisture, npk } = sensorData;
 
   let bestMatch = null;
-  let highestScore = 50;
+  let highestScore = 25;
   let cropPredictions = [];
 
   crops.forEach((crop) => {

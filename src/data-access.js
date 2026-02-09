@@ -28,6 +28,20 @@ async function getAllCropForecast() {
   return result.rows;
 }
 
+async function filterCropForecastByDate(start, end) {
+  const result = await pool.query(
+    `
+    SELECT *
+    FROM crop_forecasting_data
+    WHERE created_at BETWEEN $1 AND $2
+    ORDER BY created_at ASC
+    `,
+    [start, end]
+  );
+
+  return result.rows;
+}
+
 async function getExistingCropConditions(cropName) {
   const now = new Date();
   const formattedDate = formatInTimeZone(now, "Asia/Manila", "yyyy-MM-dd");
@@ -40,14 +54,14 @@ async function getExistingCropConditions(cropName) {
 }
 
 async function recordSensorReadings(sensorData) {
-  const { temperature, humidity, soil_moisture, npk } = sensorData;
+  const { temperature, humidity, soil_moisture, npk, is_firstreading } = sensorData;
   const query = `
     INSERT INTO sensor_readings 
-    (temperature, humidity, soil_moisture, npk)
-    VALUES ($1,$2,$3,$4)
+    (temperature, humidity, soil_moisture, npk, is_firstreading)
+    VALUES ($1,$2,$3,$4,$5)
     RETURNING *;
   `;
-  const values = [temperature, humidity, soil_moisture, npk];
+  const values = [temperature, humidity, soil_moisture, npk, is_firstreading];
   const result = await pool.query(query, values);
   return result.rows[0];
 }
@@ -59,9 +73,62 @@ async function getSensorReadings() {
   return result.rows;
 }
 
+async function disableCurrentReading() {
+  const query = `
+    UPDATE schedule_reading
+    SET is_active = false
+    WHERE is_active = true
+    RETURNING *
+  `;
+
+  const result = await pool.query(query);
+
+  return result
+}
+
+async function addScheduleReading(timeCount) {
+  const query = `
+    INSERT INTO schedule_reading 
+    (time_count, is_active)
+    VALUES ($1, $2)
+    RETURNING *;
+  `;
+
+  await disableCurrentReading();
+
+  const values = [timeCount, true];
+  const result = await pool.query(query, values);
+  return result?.rows[0];
+}
+
+async function getScheduledReading() {
+  const result = await pool.query(
+    "SELECT * FROM schedule_reading WHERE is_active = true;"
+  );
+  return result?.rows[0];
+}
+
+async function sensorReadings() {
+  const result = await pool.query(
+    `SELECT *
+    FROM sensor_readings
+    WHERE sensor_readings_id >= (
+        SELECT MAX(sensor_readings_id)
+        FROM sensor_readings
+        WHERE is_firstreading = true
+    )
+    ORDER BY sensor_readings_id desc;`
+  );
+  return result?.rows;
+}
+
 module.exports = {
   recordCrop,
   getAllCropForecast,
   recordSensorReadings,
   getSensorReadings,
+  addScheduleReading,
+  getScheduledReading,
+  sensorReadings,
+  filterCropForecastByDate
 };
