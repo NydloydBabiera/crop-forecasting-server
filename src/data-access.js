@@ -7,9 +7,9 @@ async function recordCrop(cropData) {
   const isCropExists = await getExistingCropConditions(crop_name);
   const now = new Date().toISOString();
 
-  if (isCropExists) {
-    return;
-  }
+  // if (isCropExists) {
+  //   return;
+  // }
   const query = `
     INSERT INTO crop_forecasting_data 
     (crop_name, temperature, humidity, soil_moisture, npk)
@@ -31,10 +31,41 @@ async function getAllCropForecast() {
 async function filterCropForecastByDate(start, end) {
   const result = await pool.query(
     `
-    SELECT *
-    FROM crop_forecasting_data
-    WHERE created_at BETWEEN $1 AND $2
-    ORDER BY created_at ASC
+    SELECT
+      CASE WHEN r.sensor_readings_id IS NULL THEN c.crop_name ELSE '' END as crop_name,
+      r.crop_id,
+      r.sensor_readings_id,
+
+      ROUND(AVG(r.temperature)::numeric, 2)     AS temperature,
+      ROUND(AVG(r.humidity)::numeric, 2) AS humidity,
+      ROUND(AVG(r.soil_moisture)::numeric, 2) AS soil_moisture,
+      ROUND(AVG(r.npk)::numeric, 2)      AS npk,
+
+      CASE
+        WHEN GROUPING(r.sensor_readings_id) = 0 THEN 1   -- individual readings
+        WHEN GROUPING(r.crop_id) = 0 THEN 2       -- crop average (yellow)
+        ELSE 3                                    -- overall average (green)
+      END AS sort_order,
+
+      CASE
+        WHEN GROUPING(r.sensor_readings_id) = 0 THEN 'READING'
+        WHEN GROUPING(r.crop_id) = 0 THEN 'CROP_AVG'
+        ELSE 'OVERALL_AVG'
+      END AS row_type
+
+    FROM sensor_readings r
+    JOIN crop_forecasting_data c ON c.crop_id = r.crop_id
+    WHERE c.created_at BETWEEN $1 AND $2
+    GROUP BY GROUPING SETS (
+      (c.crop_name, r.crop_id, r.sensor_readings_id),
+      (c.crop_name, r.crop_id),
+      ()                                       
+    )
+
+    ORDER BY
+      r.crop_id NULLS LAST,
+      sort_order,
+      r.sensor_readings_id;
     `,
     [start, end]
   );
@@ -122,6 +153,19 @@ async function sensorReadings() {
   return result?.rows;
 }
 
+async function updateReadingsForecastId(cropId,sensorReadingsId) {
+  const query = `
+    UPDATE sensor_readings
+    SET crop_id = $1
+    where sensor_readings_id = $2
+    RETURNING *
+  `;
+
+  const values = [cropId, sensorReadingsId];
+  const result = await pool.query(query, values);
+  return result?.rows[0];
+}
+
 module.exports = {
   recordCrop,
   getAllCropForecast,
@@ -130,5 +174,6 @@ module.exports = {
   addScheduleReading,
   getScheduledReading,
   sensorReadings,
-  filterCropForecastByDate
+  filterCropForecastByDate,
+  updateReadingsForecastId
 };

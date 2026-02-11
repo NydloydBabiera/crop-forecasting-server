@@ -1,3 +1,5 @@
+const { updateReadingsForecastId } = require("./data-access");
+
 const crops = [
   {
     name: "Eggplant",
@@ -80,13 +82,13 @@ const inRange = (val, [min, max]) => val >= min && val <= max;
  * @returns {Object} { crop: "Crop Name", matchPercent: 0–100 }
  */
 function cropForecast(sensorData) {
-  const { temperature, humidity, soil_moisture, npk } = sensorData;
+  const {temperature, humidity, soil_moisture, npk } = sensorData;
 
   let bestMatch = null;
-  let highestScore = 25;
+  let highestScore = 80;
   let cropPredictions = [];
 
-  crops.forEach((crop) => {
+  crops.forEach(async (crop) => {
     let score = 0;
     if (inRange(temperature, crop.temperature)) score += 25;
     if (inRange(humidity, crop.humidity)) score += 25;
@@ -97,6 +99,7 @@ function cropForecast(sensorData) {
       highestScore = score;
       bestMatch = crop.name;
       cropPredictions.push(crop.name);
+
     }
   });
 

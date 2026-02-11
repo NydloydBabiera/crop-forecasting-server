@@ -7,7 +7,7 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
 const { cropForecast } = require("./crop-forecast");
-const { recordCrop, getAllCropForecast, recordSensorReadings, getSensorReadings, getScheduledReading, addScheduleReading, sensorReadings, filterCropForecastByDate } = require("./data-access");
+const { recordCrop, getAllCropForecast, recordSensorReadings, getSensorReadings, getScheduledReading, addScheduleReading, sensorReadings, filterCropForecastByDate, updateReadingsForecastId } = require("./data-access");
 
 const app = express();
 app.use(cors());
@@ -38,13 +38,42 @@ app.post("/api/sensor", async (req, res) => {
 
   sensorData.is_firstreading = false;
   const readingsCount = await sensorReadings();
+  // console.log("🚀 ~ readingsCount:", readingsCount)
   // fetch latest readings starting from the initial readings and count it
   console.log("🚀 ~ readingsCount.length:", readingsCount.length)
   if(readingsCount.length >= timeReading.time_count){
+    const averageReadings = readingsCount.reduce(
+      (acc, curr) => {
+        acc.temperature += parseFloat(curr.temperature);
+        acc.humidity += parseFloat(curr.humidity);
+        acc.soil_moisture += parseFloat(curr.soil_moisture);
+        acc.npk += parseFloat(curr.npk);
+        acc.count += 1;
+        return acc;
+      },
+      { temperature: 0, humidity: 0, soil_moisture: 0, npk: 0, count: 0 }
+    );
+    const averages = {
+      temperature: (averageReadings.temperature / averageReadings.count).toFixed(2),
+      humidity: (averageReadings.humidity / averageReadings.count).toFixed(2),
+      soil_moisture: (averageReadings.soil_moisture / averageReadings.count).toFixed(2),
+      npk: (averageReadings.npk / averageReadings.count).toFixed(2),
+    };
+    console.log("🚀 ~ averages:", averages)
     sensorData.is_firstreading =true;
-    sensorData.cropPrediction = cropForecast(sensorData);
+    sensorData.cropPrediction = cropForecast(averages);
     sensorData.crop_name = sensorData.cropPrediction.crop;
-    await recordCrop(sensorData);
+
+    if(sensorData.cropPrediction.matchPercent === 0){
+      const crop = await recordCrop(sensorData);
+      console.log("🚀 ~ crop:", crop)
+      readingsCount.map(async (reading) =>{ 
+        await updateReadingsForecastId(crop.crop_id, reading.sensor_readings_id)
+      })
+    }
+    
+    console.log("🚀 ~ sensorData.cropPrediction:", sensorData.cropPrediction)
+    // await recordCrop(sensorData);
   }
 
   console.log("🚀 ~ sensorData.is_firstreading:", sensorData.is_firstreading)
