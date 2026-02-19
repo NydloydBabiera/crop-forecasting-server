@@ -119,6 +119,7 @@ function cropForecast(sensorData) {
       inRange(npk, crop.npk)
     );
 
+    console.log("🚀 ~ cropForecast ~ score > highestScore:", `${crop.name}:${score > highestScore}`)
     
     if (score > highestScore) {
       highestScore = score;
