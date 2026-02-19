@@ -84,39 +84,51 @@ const inRange = (val, [min, max]) => val >= min && val <= max;
  * @returns {Object} { crop: "Crop Name", matchPercent: 0–100 }
  */
 function cropForecast(sensorData) {
-  const {temperature, humidity, soil_moisture, npk } = sensorData;
-  console.log("🚀 ~ cropForecast ~ npk:", npk)
-  console.log("🚀 ~ cropForecast ~ soil_moisture:", soil_moisture)
-  console.log("🚀 ~ cropForecast ~ humidity:", humidity)
-  console.log("🚀 ~ cropForecast ~ temperature:", temperature)
+  const { temperature, humidity, soil_moisture, npk } = sensorData;
+  console.log("🚀 ~ cropForecast ~ npk:", npk);
+  console.log("🚀 ~ cropForecast ~ soil_moisture:", soil_moisture);
+  console.log("🚀 ~ cropForecast ~ humidity:", humidity);
+  console.log("🚀 ~ cropForecast ~ temperature:", temperature);
 
   let bestMatch = null;
-  let highestScore =  process.env.prediction_score;
+  let highestScore = process.env.prediction_score;
   let cropPredictions = [];
 
   crops.forEach(async (crop) => {
-    
+    console.log("🚀 ~ cropForecast ~ crop:", crop.name);
+
     let score = 0;
     if (inRange(temperature, crop.temperature)) score += 25;
-    console.log("🚀 ~ cropForecast ~ inRange(temperature, crop.temperature)):", inRange(temperature, crop.temperature))
+    console.log(
+      "🚀 ~ cropForecast ~ inRange(temperature, crop.temperature)):",
+      inRange(temperature, crop.temperature)
+    );
     if (inRange(humidity, crop.humidity)) score += 25;
-    console.log("🚀 ~ cropForecast ~ inRange(humidity, crop.humidity):", inRange(humidity, crop.humidity))
+    console.log(
+      "🚀 ~ cropForecast ~ inRange(humidity, crop.humidity):",
+      inRange(humidity, crop.humidity)
+    );
     if (inRange(soil_moisture, crop.soilMoisture)) score += 25;
-    console.log("🚀 ~ cropForecast ~ inRange(soil_moisture, crop.soilMoisture):", inRange(soil_moisture, crop.soilMoisture))
+    console.log(
+      "🚀 ~ cropForecast ~ inRange(soil_moisture, crop.soilMoisture):",
+      inRange(soil_moisture, crop.soilMoisture)
+    );
     if (inRange(npk, crop.npk)) score += 25;
-    console.log("🚀 ~ cropForecast ~ inRange(npk, crop.npk):", inRange(npk, crop.npk))
+    console.log(
+      "🚀 ~ cropForecast ~ inRange(npk, crop.npk):",
+      inRange(npk, crop.npk)
+    );
 
     if (score > highestScore) {
       highestScore = score;
       bestMatch = crop.name;
       cropPredictions.push(crop.name);
-
     }
   });
 
   return bestMatch
-    ? { crop: bestMatch, crops:cropPredictions, matchPercent: highestScore }
+    ? { crop: bestMatch, crops: cropPredictions, matchPercent: highestScore }
     : { crop: "No suitable crop found", matchPercent: 0 };
 }
 
-module.exports = {cropForecast};
+module.exports = { cropForecast };
