@@ -126,7 +126,7 @@ function cropForecast(sensorData) {
     );
 
     if (score > highestScore) {
-      highestScore = score;
+      // highestScore = score;
       bestMatch = crop.name;
       console.log("🚀 ~ cropForecast ~ score:", score);
       console.log("🚀 ~ cropForecast ~ crop.name:", crop.name);
