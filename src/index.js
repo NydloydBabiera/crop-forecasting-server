@@ -8,6 +8,8 @@ const { Server } = require("socket.io");
 const http = require("http");
 const { cropForecast } = require("./crop-forecast");
 const { recordCrop, getAllCropForecast, recordSensorReadings, getSensorReadings, getScheduledReading, addScheduleReading, sensorReadings, filterCropForecastByDate, updateReadingsForecastId } = require("./data-access");
+const dotenv = require("dotenv");
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -66,7 +68,7 @@ app.post("/api/sensor", async (req, res) => {
     sensorData.cropPrediction = cropForecast(averages);
     sensorData.crop_name = sensorData.cropPrediction.crop;
 
-    if(sensorData.cropPrediction.matchPercent === 0){
+    if(sensorData.cropPrediction.matchPercent > process.env.prediction_score){
       const crop = await recordCrop(sensorData);
       console.log("🚀 ~ crop:", crop)
       readingsCount.map(async (reading) =>{ 

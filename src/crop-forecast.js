@@ -1,4 +1,6 @@
 const { updateReadingsForecastId } = require("./data-access");
+const dotenv = require("dotenv");
+dotenv.config();
 
 const crops = [
   {
@@ -89,7 +91,7 @@ function cropForecast(sensorData) {
   console.log("🚀 ~ cropForecast ~ temperature:", temperature)
 
   let bestMatch = null;
-  let highestScore = 80;
+  let highestScore =  process.env.prediction_score;
   let cropPredictions = [];
 
   crops.forEach(async (crop) => {
