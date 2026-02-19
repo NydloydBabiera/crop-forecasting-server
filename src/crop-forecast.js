@@ -119,19 +119,27 @@ function cropForecast(sensorData) {
       inRange(npk, crop.npk)
     );
 
-    console.log("🚀 ~ cropForecast ~ score > highestScore:", `${crop.name}:${score > highestScore}`)
-    
+    console.log("🚀 ~ cropForecast ~ highestScore:", highestScore);
+    console.log(
+      "🚀 ~ cropForecast ~ score > highestScore:",
+      `${crop.name}: Score: ${score}: ${score > highestScore}`
+    );
+
     if (score > highestScore) {
       highestScore = score;
       bestMatch = crop.name;
       console.log("🚀 ~ cropForecast ~ score:", score);
-      console.log("🚀 ~ cropForecast ~ crop.name:", crop.name)
+      console.log("🚀 ~ cropForecast ~ crop.name:", crop.name);
       cropPredictions.push(crop.name);
     }
   });
 
   return bestMatch
-    ? { crop:  cropPredictions.length ? cropPredictions.join(', ') : '', crops: cropPredictions, matchPercent: highestScore }
+    ? {
+        crop: cropPredictions.length ? cropPredictions.join(", ") : "",
+        crops: cropPredictions,
+        matchPercent: highestScore,
+      }
     : { crop: "No suitable crop found", matchPercent: 0 };
 }
 
