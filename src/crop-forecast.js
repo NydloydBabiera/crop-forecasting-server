@@ -95,7 +95,7 @@ function cropForecast(sensorData) {
   let cropPredictions = [];
 
   crops.forEach((crop) => {
-    // console.log("🚀 ~ cropForecast ~ crop:", crop.name);
+    console.log("🚀 ~ cropForecast ~ crop:", crop.name);
 
     let score = 0;
     if (inRange(temperature, crop.temperature)) score += 25;
