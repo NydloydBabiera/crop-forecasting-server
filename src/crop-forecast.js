@@ -95,34 +95,36 @@ function cropForecast(sensorData) {
   let cropPredictions = [];
 
   crops.forEach(async (crop) => {
-    console.log("🚀 ~ cropForecast ~ crop:", crop.name);
+    // console.log("🚀 ~ cropForecast ~ crop:", crop.name);
 
     let score = 0;
     if (inRange(temperature, crop.temperature)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(temperature, crop.temperature)):",
-      inRange(temperature, crop.temperature)
-    );
+    // console.log(
+    //   "🚀 ~ cropForecast ~ inRange(temperature, crop.temperature)):",
+    //   inRange(temperature, crop.temperature)
+    // );
     if (inRange(humidity, crop.humidity)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(humidity, crop.humidity):",
-      inRange(humidity, crop.humidity)
-    );
+    // console.log(
+    //   "🚀 ~ cropForecast ~ inRange(humidity, crop.humidity):",
+    //   inRange(humidity, crop.humidity)
+    // );
     if (inRange(soil_moisture, crop.soilMoisture)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(soil_moisture, crop.soilMoisture):",
-      inRange(soil_moisture, crop.soilMoisture)
-    );
+    // console.log(
+    //   "🚀 ~ cropForecast ~ inRange(soil_moisture, crop.soilMoisture):",
+    //   inRange(soil_moisture, crop.soilMoisture)
+    // );
     if (inRange(npk, crop.npk)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(npk, crop.npk):",
-      inRange(npk, crop.npk)
-    );
+    // console.log(
+    //   "🚀 ~ cropForecast ~ inRange(npk, crop.npk):",
+    //   inRange(npk, crop.npk)
+    // );
 
-    console.log("🚀 ~ cropForecast ~ score:", score);
+    
     if (score > highestScore) {
       highestScore = score;
       bestMatch = crop.name;
+      console.log("🚀 ~ cropForecast ~ score:", score);
+      console.log("🚀 ~ cropForecast ~ crop.name:", crop.name)
       cropPredictions.push(crop.name);
     }
   });
