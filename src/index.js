@@ -41,7 +41,7 @@ app.post("/api/sensor", async (req, res) => {
   // console.log("🚀 ~ readingsCount:", readingsCount)
   // fetch latest readings starting from the initial readings and count it
   console.log("🚀 ~ readingsCount.length:", readingsCount.length)
-  if(readingsCount.length >= timeReading.time_count){
+  if(readingsCount.length >= timeReading.time_count || readingsCount.length === 0){
     const averageReadings = readingsCount.reduce(
       (acc, curr) => {
         acc.temperature += parseFloat(curr.temperature);
@@ -53,14 +53,16 @@ app.post("/api/sensor", async (req, res) => {
       },
       { temperature: 0, humidity: 0, soil_moisture: 0, npk: 0, count: 0 }
     );
+
     const averages = {
       temperature: (averageReadings.temperature / averageReadings.count).toFixed(2),
       humidity: (averageReadings.humidity / averageReadings.count).toFixed(2),
       soil_moisture: (averageReadings.soil_moisture / averageReadings.count).toFixed(2),
       npk: (averageReadings.npk / averageReadings.count).toFixed(2),
     };
+
     console.log("🚀 ~ averages:", averages)
-    sensorData.is_firstreading =true;
+    sensorData.is_firstreading = true;
     sensorData.cropPrediction = cropForecast(averages);
     sensorData.crop_name = sensorData.cropPrediction.crop;
 
