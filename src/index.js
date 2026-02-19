@@ -68,7 +68,7 @@ app.post("/api/sensor", async (req, res) => {
     sensorData.cropPrediction = cropForecast(averages);
     sensorData.crop_name = sensorData.cropPrediction.crop;
 
-    if(sensorData.cropPrediction.matchPercent > process.env.prediction_score){
+    if(sensorData.cropPrediction.matchPercent >= process.env.prediction_score){
       const crop = await recordCrop(sensorData);
       console.log("🚀 ~ crop:", crop)
       readingsCount.map(async (reading) =>{ 
