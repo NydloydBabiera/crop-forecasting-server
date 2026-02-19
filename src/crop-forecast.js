@@ -85,10 +85,6 @@ const inRange = (val, [min, max]) => val >= min && val <= max;
  */
 function cropForecast(sensorData) {
   const { temperature, humidity, soil_moisture, npk } = sensorData;
-  console.log("🚀 ~ cropForecast ~ npk:", npk);
-  console.log("🚀 ~ cropForecast ~ soil_moisture:", soil_moisture);
-  console.log("🚀 ~ cropForecast ~ humidity:", humidity);
-  console.log("🚀 ~ cropForecast ~ temperature:", temperature);
 
   let bestMatch = null;
   let highestScore = process.env.prediction_score;
@@ -99,31 +95,9 @@ function cropForecast(sensorData) {
 
     let score = 0;
     if (inRange(temperature, crop.temperature)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(temperature, crop.temperature)):",
-      inRange(temperature, crop.temperature)
-    );
     if (inRange(humidity, crop.humidity)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(humidity, crop.humidity):",
-      inRange(humidity, crop.humidity)
-    );
     if (inRange(soil_moisture, crop.soilMoisture)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(soil_moisture, crop.soilMoisture):",
-      inRange(soil_moisture, crop.soilMoisture)
-    );
     if (inRange(npk, crop.npk)) score += 25;
-    console.log(
-      "🚀 ~ cropForecast ~ inRange(npk, crop.npk):",
-      inRange(npk, crop.npk)
-    );
-
-    console.log("🚀 ~ cropForecast ~ highestScore:", highestScore);
-    console.log(
-      "🚀 ~ cropForecast ~ score > highestScore:",
-      `${crop.name}: Score: ${score}: ${score > highestScore}`
-    );
 
     if (score > highestScore) {
       // highestScore = score;
