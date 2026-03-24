@@ -7,7 +7,20 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
 const { cropForecast } = require("./crop-forecast");
-const { recordCrop, getAllCropForecast, recordSensorReadings, getSensorReadings, getScheduledReading, addScheduleReading, sensorReadings, filterCropForecastByDate, updateReadingsForecastId } = require("./data-access");
+const {
+  recordCrop,
+  getAllCropForecast,
+  recordSensorReadings,
+  getSensorReadings,
+  getScheduledReading,
+  addScheduleReading,
+  sensorReadings,
+  filterCropForecastByDate,
+  updateReadingsForecastId,
+  addFarmer,
+  getAllFarmers,
+  activateFarmer,
+} = require("./data-access");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -22,9 +35,7 @@ const io = new Server(server, {
 
 let sensorData = { humidity: 0, temperature: 0, soil_moisture: 0, npk: 0 };
 
-async function recordInitialScheduledReading(sensorReadings) {
-  
-}
+async function recordInitialScheduledReading(sensorReadings) {}
 
 // REST endpoint (for ESP32)
 app.post("/api/sensor", async (req, res) => {
@@ -33,17 +44,20 @@ app.post("/api/sensor", async (req, res) => {
   // sensorData.cropPrediction = cropForecast(sensorData);
 
   console.log("Received sensor data:", sensorData);
-  
+
   // fetch 1 row of latest minute counter
   const timeReading = await getScheduledReading();
-  console.log("🚀 ~ timeReading:", timeReading.time_count)
+  console.log("🚀 ~ timeReading:", timeReading.time_count);
 
   sensorData.is_firstreading = false;
   const readingsCount = await sensorReadings();
   // console.log("🚀 ~ readingsCount:", readingsCount)
   // fetch latest readings starting from the initial readings and count it
-  console.log("🚀 ~ readingsCount.length:", readingsCount.length)
-  if(readingsCount.length >= timeReading.time_count || readingsCount.length === 0){
+  console.log("🚀 ~ readingsCount.length:", readingsCount.length);
+  if (
+    readingsCount.length >= timeReading.time_count ||
+    readingsCount.length === 0
+  ) {
     const averageReadings = readingsCount.reduce(
       (acc, curr) => {
         acc.temperature += parseFloat(curr.temperature);
@@ -57,36 +71,44 @@ app.post("/api/sensor", async (req, res) => {
     );
 
     const averages = {
-      temperature: (averageReadings.temperature / averageReadings.count).toFixed(2),
+      temperature: (
+        averageReadings.temperature / averageReadings.count
+      ).toFixed(2),
       humidity: (averageReadings.humidity / averageReadings.count).toFixed(2),
-      soil_moisture: (averageReadings.soil_moisture / averageReadings.count).toFixed(2),
+      soil_moisture: (
+        averageReadings.soil_moisture / averageReadings.count
+      ).toFixed(2),
       npk: (averageReadings.npk / averageReadings.count).toFixed(2),
     };
 
-    console.log("🚀 ~ averages:", averages)
+    console.log("🚀 ~ averages:", averages);
     sensorData.is_firstreading = true;
     sensorData.cropPrediction = cropForecast(averages);
     sensorData.crop_name = sensorData.cropPrediction.crop;
 
-    if(sensorData.cropPrediction.matchPercent >= process.env.prediction_score){
+    if (
+      sensorData.cropPrediction.matchPercent >= process.env.prediction_score
+    ) {
       const crop = await recordCrop(sensorData);
-      console.log("🚀 ~ crop:", crop)
-      readingsCount.map(async (reading) =>{ 
-        await updateReadingsForecastId(crop.crop_id, reading.sensor_readings_id)
-      })
+      console.log("🚀 ~ crop:", crop);
+      readingsCount.map(async (reading) => {
+        await updateReadingsForecastId(
+          crop.crop_id,
+          reading.sensor_readings_id
+        );
+      });
     }
-    
-    console.log("🚀 ~ sensorData.cropPrediction:", sensorData.cropPrediction)
+
+    console.log("🚀 ~ sensorData.cropPrediction:", sensorData.cropPrediction);
     // await recordCrop(sensorData);
   }
 
-  console.log("🚀 ~ sensorData.is_firstreading:", sensorData.is_firstreading)
-  
+  console.log("🚀 ~ sensorData.is_firstreading:", sensorData.is_firstreading);
+
   // Broadcast to all connected clients
   io.emit("sensor-update", sensorData);
   // sensorData.crop_name = sensorData.cropPrediction.crop;
 
-  
   await recordSensorReadings(sensorData);
 
   res.json({ status: "ok" });
@@ -127,7 +149,7 @@ app.get("/getScheduledReading", async (req, res) => {
 app.post("/addScheduleReading", async (req, res) => {
   try {
     const { timeCount } = req.body;
-    console.log("🚀 ~ timeCount:", timeCount)
+    console.log("🚀 ~ timeCount:", timeCount);
     const schedule = await addScheduleReading(timeCount);
     res.json(schedule);
   } catch (err) {
@@ -138,13 +160,43 @@ app.post("/addScheduleReading", async (req, res) => {
 app.get("/filterCropForecastByDate", async (req, res) => {
   try {
     const { start, end } = req.query;
-    console.log("🚀 ~ req.query:", req.query)
+    console.log("🚀 ~ req.query:", req.query);
     const filteredCropForest = await filterCropForecastByDate(start, end);
     res.json(filteredCropForest);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-}); 
+});
+
+app.post("/addFarmer", async (req, res) => {
+  try {
+    const farmerInformation = req.body;
+    const farmer = await addFarmer(farmerInformation);
+    res.json(farmer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/getAllFarmers", async (req, res) => {
+  try {
+    const farmers = await getAllFarmers();
+    res.json(farmers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/activateFarmer", async (req, res) => {
+  try {
+    console.log("🚀 ~ req.body:", req.body);
+    const { farmerId } = req.body;
+    const farmer = await activateFarmer(farmerId);
+    res.json(farmer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);

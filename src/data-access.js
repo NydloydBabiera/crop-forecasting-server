@@ -85,7 +85,8 @@ async function getExistingCropConditions(cropName) {
 }
 
 async function recordSensorReadings(sensorData) {
-  const { temperature, humidity, soil_moisture, npk, is_firstreading } = sensorData;
+  const { temperature, humidity, soil_moisture, npk, is_firstreading } =
+    sensorData;
   const query = `
     INSERT INTO sensor_readings 
     (temperature, humidity, soil_moisture, npk, is_firstreading)
@@ -114,7 +115,7 @@ async function disableCurrentReading() {
 
   const result = await pool.query(query);
 
-  return result
+  return result;
 }
 
 async function addScheduleReading(timeCount) {
@@ -153,7 +154,7 @@ async function sensorReadings() {
   return result?.rows;
 }
 
-async function updateReadingsForecastId(cropId,sensorReadingsId) {
+async function updateReadingsForecastId(cropId, sensorReadingsId) {
   const query = `
     UPDATE sensor_readings
     SET crop_id = $1
@@ -166,6 +167,49 @@ async function updateReadingsForecastId(cropId,sensorReadingsId) {
   return result?.rows[0];
 }
 
+async function addFarmer(farmerInformation) {
+  const { fullName, farmName, address, contactInformation } = farmerInformation;
+  const query = `
+    INSERT INTO farmer_information 
+    (full_name, farm_name, address, contact_information, is_active)
+    VALUES ($1,$2,$3,$4,$5)
+    RETURNING *;
+  `;
+  const values = [fullName, farmName, address, contactInformation, true];
+  await deactivateFarmer();
+  const result = await pool.query(query, values);
+  return result?.rows[0];
+}
+
+async function getAllFarmers() {
+  const result = await pool.query(
+    "SELECT * FROM farmer_information ORDER BY farmer_information_id DESC;"
+  );
+  return result?.rows;
+}
+
+async function deactivateFarmer() {
+  const query = `
+    UPDATE farmer_information
+    SET is_active = false
+    WHERE is_active = true
+    RETURNING *
+  `;
+
+  const result = await pool.query(query);
+  return result?.rows[0];
+}
+
+async function activateFarmer(farmerId) {
+  const query = `UPDATE farmer_information
+    SET is_active = true
+    WHERE farmer_information_id = $1
+    RETURNING *`;
+  await deactivateFarmer();
+  const values = [farmerId];
+  const result = await pool.query(query, values);
+  return result?.rows[0];
+}
 module.exports = {
   recordCrop,
   getAllCropForecast,
@@ -175,5 +219,8 @@ module.exports = {
   getScheduledReading,
   sensorReadings,
   filterCropForecastByDate,
-  updateReadingsForecastId
+  updateReadingsForecastId,
+  addFarmer,
+  getAllFarmers,
+  activateFarmer,
 };
