@@ -21,6 +21,7 @@ const {
   getAllFarmers,
   activateFarmer,
   deactivateFarmer,
+  getActiveFarmer,
 } = require("./data-access");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -44,6 +45,17 @@ app.post("/api/sensor", async (req, res) => {
   sensorData = { temperature, humidity, soil_moisture, npk };
   // sensorData.cropPrediction = cropForecast(sensorData);
 
+  const farmer = await getActiveFarmer();
+
+  if (!farmer) {
+    return res
+      .status(400)
+      .json({
+        error:
+          "No active farmer found. Please activate a farmer before sending sensor data.",
+      });
+  }
+
   console.log("Received sensor data:", sensorData);
 
   // fetch 1 row of latest minute counter
@@ -51,6 +63,7 @@ app.post("/api/sensor", async (req, res) => {
   console.log("🚀 ~ timeReading:", timeReading.time_count);
 
   sensorData.is_firstreading = false;
+  sensorData.farmer_id = farmer.farmer_information_id;
   const readingsCount = await sensorReadings();
   // console.log("🚀 ~ readingsCount:", readingsCount)
   // fetch latest readings starting from the initial readings and count it
@@ -160,9 +173,14 @@ app.post("/addScheduleReading", async (req, res) => {
 
 app.get("/filterCropForecastByDate", async (req, res) => {
   try {
-    const { start, end } = req.query;
-    console.log("🚀 ~ req.query:", req.query);
-    const filteredCropForest = await filterCropForecastByDate(start, end);
+    const { start, end, farmerId } = req.query;
+    console.log("🚀 ~ start, end, farmerId:", start, end, farmerId)
+    const filteredCropForest = await filterCropForecastByDate(
+      start,
+      end,
+      farmerId
+    );
+    console.log("🚀 ~ filteredCropForest:", filteredCropForest);
     res.json(filteredCropForest);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -202,7 +220,6 @@ app.post("/activateFarmer", async (req, res) => {
 app.post("/deactivateFarmer", async (req, res) => {
   try {
     const farmer = await deactivateFarmer();
-    console.log("🚀 reached here")
     res.json(farmer);
   } catch (err) {
     res.status(500).json({ error: err.message });

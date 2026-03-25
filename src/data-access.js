@@ -2,7 +2,7 @@ const { format, formatInTimeZone } = require("date-fns-tz");
 const pool = require("./db");
 
 async function recordCrop(cropData) {
-  const { crop_name, temperature, humidity, soil_moisture, npk } = cropData;
+  const { crop_name, temperature, humidity, soil_moisture, npk, farmer_id } = cropData;
 
   const isCropExists = await getExistingCropConditions(crop_name);
   const now = new Date().toISOString();
@@ -12,11 +12,11 @@ async function recordCrop(cropData) {
   // }
   const query = `
     INSERT INTO crop_forecasting_data 
-    (crop_name, temperature, humidity, soil_moisture, npk)
-    VALUES ($1,$2,$3,$4,$5)
+    (crop_name, temperature, humidity, soil_moisture, npk, farmer_information_id)
+    VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *;
   `;
-  const values = [crop_name, temperature, humidity, soil_moisture, npk];
+  const values = [crop_name, temperature, humidity, soil_moisture, npk, farmer_id];
   const result = await pool.query(query, values);
   return result.rows[0];
 }
@@ -77,6 +77,19 @@ END as crop_name,
   return result.rows;
 }
 
+// async function filterCropForecastByDate(start, end, farmerId) {
+//   const result = await pool.query(
+//     `
+//     select * from crop_forecasting_data
+//     WHERE created_at BETWEEN $1 AND $2
+//     and farmer_information_id = $3
+//     `,
+//     [start, end, farmerId]
+//   );
+
+//   return result.rows;
+// }
+
 async function getExistingCropConditions(cropName) {
   const now = new Date();
   const formattedDate = formatInTimeZone(now, "Asia/Manila", "yyyy-MM-dd");
@@ -89,15 +102,15 @@ async function getExistingCropConditions(cropName) {
 }
 
 async function recordSensorReadings(sensorData) {
-  const { temperature, humidity, soil_moisture, npk, is_firstreading } =
+  const { temperature, humidity, soil_moisture, npk, is_firstreading, farmer_id } =
     sensorData;
   const query = `
     INSERT INTO sensor_readings 
-    (temperature, humidity, soil_moisture, npk, is_firstreading)
-    VALUES ($1,$2,$3,$4,$5)
+    (temperature, humidity, soil_moisture, npk, is_firstreading, farmer_information_id)
+    VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *;
   `;
-  const values = [temperature, humidity, soil_moisture, npk, is_firstreading];
+  const values = [temperature, humidity, soil_moisture, npk, is_firstreading, farmer_id];
   const result = await pool.query(query, values);
   return result.rows[0];
 }
