@@ -20,6 +20,7 @@ const {
   addFarmer,
   getAllFarmers,
   activateFarmer,
+  deactivateFarmer,
 } = require("./data-access");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -192,6 +193,16 @@ app.post("/activateFarmer", async (req, res) => {
     console.log("🚀 ~ req.body:", req.body);
     const { farmerId } = req.body;
     const farmer = await activateFarmer(farmerId);
+    res.json(farmer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/deactivateFarmer", async (req, res) => {
+  try {
+    const farmer = await deactivateFarmer();
+    console.log("🚀 reached here")
     res.json(farmer);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -210,6 +210,14 @@ async function activateFarmer(farmerId) {
   const result = await pool.query(query, values);
   return result?.rows[0];
 }
+
+async function getActiveFarmer(){
+  const result = await pool.query(
+    "SELECT * FROM farmer_information WHERE is_active = true;"
+  );
+  return result?.rows[0];
+}
+
 module.exports = {
   recordCrop,
   getAllCropForecast,
@@ -223,4 +231,6 @@ module.exports = {
   addFarmer,
   getAllFarmers,
   activateFarmer,
+  getActiveFarmer,
+  deactivateFarmer
 };
