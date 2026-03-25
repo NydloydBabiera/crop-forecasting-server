@@ -32,7 +32,11 @@ async function filterCropForecastByDate(start, end) {
   const result = await pool.query(
     `
     SELECT
-      CASE WHEN r.sensor_readings_id IS NULL THEN c.crop_name ELSE '' END as crop_name,
+      CASE 
+  WHEN r.sensor_readings_id IS NULL 
+  THEN c.crop_name 
+  ELSE TO_CHAR(r.created_at, 'YYYY-MM-DD HH24:MI:SS') 
+END as crop_name,
       r.crop_id,
       r.sensor_readings_id,
 
@@ -55,9 +59,9 @@ async function filterCropForecastByDate(start, end) {
 
     FROM sensor_readings r
     JOIN crop_forecasting_data c ON c.crop_id = r.crop_id
-    WHERE c.created_at BETWEEN $1 AND $2
+     WHERE c.created_at BETWEEN $1 AND $2
     GROUP BY GROUPING SETS (
-      (c.crop_name, r.crop_id, r.sensor_readings_id),
+      (c.crop_name, r.crop_id, r.sensor_readings_id, r.created_at),
       (c.crop_name, r.crop_id),
       ()                                       
     )
@@ -65,7 +69,7 @@ async function filterCropForecastByDate(start, end) {
     ORDER BY
       r.crop_id NULLS LAST,
       sort_order,
-      r.sensor_readings_id;
+      r.sensor_readings_id ;
     `,
     [start, end]
   );
@@ -211,7 +215,7 @@ async function activateFarmer(farmerId) {
   return result?.rows[0];
 }
 
-async function getActiveFarmer(){
+async function getActiveFarmer() {
   const result = await pool.query(
     "SELECT * FROM farmer_information WHERE is_active = true;"
   );
@@ -232,5 +236,5 @@ module.exports = {
   getAllFarmers,
   activateFarmer,
   getActiveFarmer,
-  deactivateFarmer
+  deactivateFarmer,
 };
