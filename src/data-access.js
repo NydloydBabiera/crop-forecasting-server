@@ -2,7 +2,8 @@ const { format, formatInTimeZone } = require("date-fns-tz");
 const pool = require("./db");
 
 async function recordCrop(cropData) {
-  const { crop_name, temperature, humidity, soil_moisture, npk, farmer_id } = cropData;
+  const { crop_name, temperature, humidity, soil_moisture, npk, farmer_id } =
+    cropData;
 
   const isCropExists = await getExistingCropConditions(crop_name);
   const now = new Date().toISOString();
@@ -16,7 +17,14 @@ async function recordCrop(cropData) {
     VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *;
   `;
-  const values = [crop_name, temperature, humidity, soil_moisture, npk, farmer_id];
+  const values = [
+    crop_name,
+    temperature,
+    humidity,
+    soil_moisture,
+    npk,
+    farmer_id,
+  ];
   const result = await pool.query(query, values);
   return result.rows[0];
 }
@@ -102,15 +110,28 @@ async function getExistingCropConditions(cropName) {
 }
 
 async function recordSensorReadings(sensorData) {
-  const { temperature, humidity, soil_moisture, npk, is_firstreading, farmer_id } =
-    sensorData;
+  const {
+    temperature,
+    humidity,
+    soil_moisture,
+    npk,
+    is_firstreading,
+    farmer_id,
+  } = sensorData;
   const query = `
     INSERT INTO sensor_readings 
     (temperature, humidity, soil_moisture, npk, is_firstreading, farmer_information_id)
     VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *;
   `;
-  const values = [temperature, humidity, soil_moisture, npk, is_firstreading, farmer_id];
+  const values = [
+    temperature,
+    humidity,
+    soil_moisture,
+    npk,
+    is_firstreading,
+    farmer_id,
+  ];
   const result = await pool.query(query, values);
   return result.rows[0];
 }
@@ -235,6 +256,60 @@ async function getActiveFarmer() {
   return result?.rows[0];
 }
 
+async function getCropForecastReport(params) {
+  console.log("🚀 ~ getSensorReadingsReport ~ params:", params);
+  const { start, end, farmerId } = params;
+  const query = `
+SELECT 
+  crop_name,
+  farmer_information_id,
+  created_at,
+  temperature::numeric AS temperature,
+  humidity::numeric AS humidity,
+  soil_moisture::numeric AS soil_moisture,
+  npk::numeric AS npk,
+  'CROP_AVG' as row_type
+FROM crop_forecasting_data
+WHERE created_at BETWEEN $1 AND $2
+  and farmer_information_id = $3
+UNION ALL
+
+SELECT 
+  '' as crop_name,
+  farmer_information_id,
+  NULL AS created_at,
+  ROUND(AVG(temperature::numeric), 2),
+  ROUND(AVG(humidity::numeric), 2),
+  ROUND(AVG(soil_moisture::numeric), 2),
+  ROUND(AVG(npk::numeric), 2),
+  'OVERALL_AVG' as row_type
+FROM crop_forecasting_data
+WHERE created_at BETWEEN $1 AND $2
+  and farmer_information_id = $3
+GROUP BY farmer_information_id
+
+ORDER BY farmer_information_id, created_at NULLS LAST;
+      `;
+
+  const values = [start, end, farmerId];
+
+  const result = await pool.query(query, values);
+  return result?.rows;
+}
+
+async function getSensorReadingsReport(params) {
+  const { start, end, farmerId } = params;
+  const query = `select * from sensor_readings 
+  WHERE created_at BETWEEN $1 AND $2
+  and farmer_information_id = $3
+  `;
+
+  const values = [start, end, farmerId];
+  const result = await pool.query(query, values);
+
+  return result?.rows;
+}
+
 module.exports = {
   recordCrop,
   getAllCropForecast,
@@ -250,4 +325,6 @@ module.exports = {
   activateFarmer,
   getActiveFarmer,
   deactivateFarmer,
+  getCropForecastReport,
+  getSensorReadingsReport,
 };

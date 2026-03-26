@@ -22,6 +22,8 @@ const {
   activateFarmer,
   deactivateFarmer,
   getActiveFarmer,
+  getCropForecastReport,
+  getSensorReadingsReport,
 } = require("./data-access");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -48,12 +50,10 @@ app.post("/api/sensor", async (req, res) => {
   const farmer = await getActiveFarmer();
 
   if (!farmer) {
-    return res
-      .status(400)
-      .json({
-        error:
-          "No active farmer found. Please activate a farmer before sending sensor data.",
-      });
+    return res.status(400).json({
+      error:
+        "No active farmer found. Please activate a farmer before sending sensor data.",
+    });
   }
 
   console.log("Received sensor data:", sensorData);
@@ -174,7 +174,7 @@ app.post("/addScheduleReading", async (req, res) => {
 app.get("/filterCropForecastByDate", async (req, res) => {
   try {
     const { start, end, farmerId } = req.query;
-    console.log("🚀 ~ start, end, farmerId:", start, end, farmerId)
+    console.log("🚀 ~ start, end, farmerId:", start, end, farmerId);
     const filteredCropForest = await filterCropForecastByDate(
       start,
       end,
@@ -223,6 +223,26 @@ app.post("/deactivateFarmer", async (req, res) => {
     res.json(farmer);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/getCropForecastReport", async (req, res) => {
+  try {
+    const params = req.query;
+    const cropForecastReport = await getCropForecastReport(params);
+    res.json(cropForecastReport);
+  } catch (error) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/getSensorReadingsReport", async (req, res) => {
+  try {
+    const params = req.query;
+    const sensorReadingsReport = await getSensorReadingsReport(params);
+    res.json(sensorReadingsReport);
+  } catch (error) {
+    res.status(400).json({ error: err.message });
   }
 });
 
