@@ -260,35 +260,43 @@ async function getCropForecastReport(params) {
   console.log("🚀 ~ getSensorReadingsReport ~ params:", params);
   const { start, end, farmerId } = params;
   const query = `
-SELECT 
-  crop_name,
-  farmer_information_id,
-  created_at,
-  temperature::numeric AS temperature,
-  humidity::numeric AS humidity,
-  soil_moisture::numeric AS soil_moisture,
-  npk::numeric AS npk,
-  'CROP_AVG' as row_type
-FROM crop_forecasting_data
-WHERE created_at BETWEEN $1 AND $2
-  and farmer_information_id = $3
-UNION ALL
+    SELECT *
+    FROM (
+      SELECT 
+        crop_name,
+        farmer_information_id,
+        created_at,
+        temperature::numeric AS temperature,
+        humidity::numeric AS humidity,
+        soil_moisture::numeric AS soil_moisture,
+        npk::numeric AS npk,
+        'CROP_AVG' as row_type
+      FROM crop_forecasting_data
+    WHERE created_at BETWEEN $1 AND $2
+      and farmer_information_id = $3
+      UNION ALL
 
-SELECT 
-  '' as crop_name,
-  farmer_information_id,
-  NULL AS created_at,
-  ROUND(AVG(temperature::numeric), 2),
-  ROUND(AVG(humidity::numeric), 2),
-  ROUND(AVG(soil_moisture::numeric), 2),
-  ROUND(AVG(npk::numeric), 2),
-  'OVERALL_AVG' as row_type
-FROM crop_forecasting_data
-WHERE created_at BETWEEN $1 AND $2
-  and farmer_information_id = $3
-GROUP BY farmer_information_id
-
-ORDER BY farmer_information_id, created_at NULLS LAST;
+      SELECT 
+        '' as crop_name,
+        farmer_information_id,
+        NULL AS created_at,
+        ROUND(AVG(temperature::numeric), 2),
+        ROUND(AVG(humidity::numeric), 2),
+        ROUND(AVG(soil_moisture::numeric), 2),
+        ROUND(AVG(npk::numeric), 2),
+        'OVERALL_AVG' as row_type
+      FROM crop_forecasting_data
+    WHERE created_at BETWEEN $1 AND $2
+      and farmer_information_id = $3
+      GROUP BY farmer_information_id
+    ) t
+    ORDER BY 
+      farmer_information_id,
+      CASE 
+        WHEN row_type = 'CROP_AVG' THEN 0
+        ELSE 1
+      END,
+      created_at desc;
       `;
 
   const values = [start, end, farmerId];
@@ -302,6 +310,7 @@ async function getSensorReadingsReport(params) {
   const query = `select * from sensor_readings 
   WHERE created_at BETWEEN $1 AND $2
   and farmer_information_id = $3
+  order by created_at desc
   `;
 
   const values = [start, end, farmerId];
