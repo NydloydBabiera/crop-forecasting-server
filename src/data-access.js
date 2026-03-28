@@ -31,7 +31,7 @@ async function recordCrop(cropData) {
 
 async function getAllCropForecast() {
   const result = await pool.query(
-    "SELECT * FROM crop_forecasting_data ORDER BY created_at ASC;"
+    "SELECT * FROM crop_forecasting_data ORDER BY created_at desc;"
   );
   return result.rows;
 }
