@@ -319,6 +319,18 @@ async function getSensorReadingsReport(params) {
   return result?.rows;
 }
 
+async function deleteFarmerInformation(farmerId){
+  const query = `
+    DELETE FROM farmer_information
+    WHERE farmer_information_id = $1
+    RETURNING *
+  `;
+
+  const values = [farmerId];
+  const result = await pool.query(query, values);
+  return result?.rows[0];
+}
+
 module.exports = {
   recordCrop,
   getAllCropForecast,
@@ -336,4 +348,5 @@ module.exports = {
   deactivateFarmer,
   getCropForecastReport,
   getSensorReadingsReport,
+  deleteFarmerInformation
 };

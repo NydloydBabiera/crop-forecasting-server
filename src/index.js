@@ -24,6 +24,7 @@ const {
   getActiveFarmer,
   getCropForecastReport,
   getSensorReadingsReport,
+  deleteFarmerInformation,
 } = require("./data-access");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -243,6 +244,18 @@ app.get("/getSensorReadingsReport", async (req, res) => {
     res.json(sensorReadingsReport);
   } catch (error) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete("/deleteFarmer", async (req, res) => {
+  try {
+    const params = req.query;
+    console.log("🚀 ~ params:", params);
+    const farmerId = parseInt(params.farmerId);
+    const result = await deleteFarmerInformation(farmerId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
